@@ -1,30 +1,40 @@
 package ru.courses.main;
 
 import ru.courses.geometry.Point;
+import ru.courses.geometry.Line;
 
 public class Main {
     public static void main(String[] args) {
         // Создаем точки
-        Point point1 = new Point(3, 4);
-        Point point2 = new Point(3, 4);
-        Point point3 = new Point(5, 6);
+        Point start1 = new Point(1, 1);
+        Point end1 = new Point(5, 5);
+        Point start2 = new Point(1, 1);
+        Point end2 = new Point(5, 5);
+        Point start3 = new Point(2, 3);
+        Point end3 = new Point(4, 6);
+
+        // Создаем линии
+        Line line1 = new Line(start1, end1);
+        Line line2 = new Line(start2, end2);
+        Line line3 = new Line(start3, end3);
 
         // Тестируем сравнение
-        System.out.println("point1.equals(point2): " + point1.equals(point2)); // true
-        System.out.println("point1.equals(point3): " + point1.equals(point3)); // false
-        System.out.println("point1 == point2: " + (point1 == point2)); // false
+        System.out.println("line1.equals(line2): " + line1.equals(line2)); // true
+        System.out.println("line1.equals(line3): " + line1.equals(line3)); // false
+        System.out.println("line1 == line2: " + (line1 == line2)); // false
 
-        // Тестируем клонирование
-        Point clonedPoint = point1.clone();
-        System.out.println("Original: " + point1); // Point{x=3, y=4}
-        System.out.println("Clone: " + clonedPoint); // Point{x=3, y=4}
-        System.out.println("point1.equals(clonedPoint): " + point1.equals(clonedPoint)); // true
-        System.out.println("point1 == clonedPoint: " + (point1 == clonedPoint)); // false
+        // Тестируем глубокое клонирование
+        Line clonedLine = line1.clone();
+        System.out.println("Original: " + line1); // Line{start=(1, 1), end=(5, 5)}
+        System.out.println("Clone: " + clonedLine); // Line{start=(1, 1), end=(5, 5)}
+        System.out.println("line1.equals(clonedLine): " + line1.equals(clonedLine)); // true
+        System.out.println("line1 == clonedLine: " + (line1 == clonedLine)); // false
 
-        // Проверяем, что это действительно разные объекты
-        clonedPoint.x = 10;
+        // Проверяем, что это действительно глубокие копии
+        clonedLine.start.x = 10;
+        clonedLine.end.y = 20;
         System.out.println("After modification:");
-        System.out.println("Original: " + point1); // Point{x=3, y=4}
-        System.out.println("Clone: " + clonedPoint); // Point{x=10, y=4}
+        System.out.println("Original: " + line1); // Line{start=(1, 1), end=(5, 5)} - не изменилась!
+        System.out.println("Clone: " + clonedLine); // Line{start=(10, 1), end=(5, 20)} - изменилась
     }
 }

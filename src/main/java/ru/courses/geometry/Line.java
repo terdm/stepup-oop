@@ -1,51 +1,55 @@
 package ru.courses.geometry;
+public class Line implements Cloneable {
+    public Point start, end;
 
-public class Line {
-    private Point start;
-    private Point end;
-
-    // Конструктор с двумя точками
     public Line(Point start, Point end) {
         this.start = start;
         this.end = end;
     }
 
-    // Конструктор с четырьмя целыми числами
-    public Line(int x1, int y1, int x2, int y2) {
-        this.start = new Point(x1, y1);
-        this.end = new Point(x2, y2);
+    // Переопределение метода equals для сравнения по состоянию
+    @Override
+    public boolean equals(Object obj) {
+        // 1. Проверка на ссылочную идентичность
+        if (this == obj) {
+            return true;
+        }
+
+        // 2. Проверка на null и совпадение классов
+        if (obj == null || this.getClass() != obj.getClass()) {
+            return false;
+        }
+
+        // 3. Приведение типа и сравнение полей
+        Line other = (Line) obj;
+        return this.start.equals(other.start) && this.end.equals(other.end);
     }
 
-    // Метод для получения текстового представления
+    // Переопределение hashCode в соответствии с equals
+    @Override
+    public int hashCode() {
+        int result = start.hashCode();
+        result = 31 * result + end.hashCode();
+        return result;
+    }
+
+    // Переопределение метода clone для глубокого копирования
+    @Override
+    public Line clone() {
+        try {
+            Line cloned = (Line) super.clone();
+            // Глубокое копирование: клонируем Point объекты
+            cloned.start = this.start.clone();
+            cloned.end = this.end.clone();
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Clone not supported for Line class");
+        }
+    }
+
+    // Дополнительно: переопределяем toString для удобства вывода
     @Override
     public String toString() {
-        return "Линия от " + start + " до " + end;
+        return "Line{start=" + start + ", end=" + end + "}";
     }
-
-    // Метод для расчета длины линии
-    public double getLength() {
-        int deltaX = end.x - start.x;
-        int deltaY = end.y - start.y;
-        return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-    }
-
-    // Геттеры и сеттеры для изменения точек
-    public Point getStart() {
-        return start;
-    }
-
-    public void setStart(Point start) {
-        this.start = start;
-    }
-
-    public Point getEnd() {
-        return end;
-    }
-
-    public void setEnd(Point end) {
-        this.end = end;
-    }
-
-
 }
-
