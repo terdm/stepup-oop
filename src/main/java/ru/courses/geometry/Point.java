@@ -1,28 +1,50 @@
 package ru.courses.geometry;
-public class Point {
-    public int  x;
-    public int  y;
+public class Point implements Cloneable {
+    public int x, y;
 
-    // Конструктор, требует указания обеих координат
     public Point(int x, int y) {
         this.x = x;
         this.y = y;
     }
 
-    // Метод для возврата текстового представления
-    @Override
-    public String toString() {
-        return "{" + x + ";" + y + "}";
-    }
-
-    // Метод для сравнения точек по значениям атрибутов
+    // Переопределение метода equals для сравнения по состоянию
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Point point = (Point) obj;
-        return x == point.x && y == point.y;
+        // 1. Проверка на ссылочную идентичность
+        if (this == obj) {
+            return true;
+        }
+
+        // 2. Проверка на null и совпадение классов
+        if (obj == null || this.getClass() != obj.getClass()) {
+            return false;
+        }
+
+        // 3. Приведение типа и сравнение полей
+        Point other = (Point) obj;
+        return this.x == other.x && this.y == other.y;
     }
 
+    // Переопределение hashCode в соответствии с equals
+    @Override
+    public int hashCode() {
+        int result = Integer.hashCode(x);
+        result = 31 * result + Integer.hashCode(y);
+        return result;
+    }
 
+    // Переопределение метода clone для создания копии
+    @Override
+    public Point clone() {
+        try {
+            // Вызываем родительский clone() и приводим к Point
+            return (Point) super.clone();
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError("Clone not supported for Point class");
+        }
+    }
+    @Override
+    public String toString() {
+        return "Point{x=" + x + ", y=" + y + "}";
+    }
 }
