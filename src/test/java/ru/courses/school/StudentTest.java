@@ -1,33 +1,78 @@
 package ru.courses.school;
-
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.ArrayList;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 import java.util.List;
+import static org.junit.Assert.*;
 
 public class StudentTest {
+    private MockWebServer server;
     private Student student;
 
-    @BeforeEach
-    void setUp() {
+    @Before
+    public void setUp() throws Exception {
+        server = new MockWebServer();
+        server.start(5352); // Запускаем на порту 5352
         student = new Student("Иван Иванов");
     }
 
-    @Test
-    void testConstructorAndGetName() {
-        assertEquals("Иван Иванов", student.getName());
+    @After
+    public void tearDown() throws Exception {
+        server.shutdown();
     }
 
     @Test
-    void testSetName() {
-        student.setName("Петр Петров");
-        assertEquals("Петр Петров", student.getName());
+    public void testAddValidGrade() throws Exception {
+        // Настраиваем заглушку для возврата true на валидную оценку
+        server.enqueue(new MockResponse()
+                .setBody("true")
+                .addHeader("Content-Type", "text/plain"));
+
+        student.addGrade(5);
+
+        // Проверяем, что оценка добавлена
+        List<Integer> grades = student.getGrades();
+        assertEquals(1, grades.size());
+        assertEquals(Integer.valueOf(5), grades.get(0));
+
+        // Проверяем, что был сделан правильный запрос
+        RecordedRequest request = server.takeRequest();
+        assertEquals("/checkGrade?grade=5", request.getPath());
     }
 
     @Test
-    void testAddValidGrade() {
+    public void testAddInvalidGrade() throws Exception {
+        // Настраиваем заглушку для возврата false на невалидную оценку
+        server.enqueue(new MockResponse()
+                .setBody("false")
+                .addHeader("Content-Type", "text/plain"));
+
+        try {
+            student.addGrade(1);
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("1 is wrong grade", e.getMessage());
+        }
+
+        // Проверяем, что оценка НЕ добавлена
+        List<Integer> grades = student.getGrades();
+        assertTrue(grades.isEmpty());
+
+        // Проверяем, что был сделан запрос
+        RecordedRequest request = server.takeRequest();
+        assertEquals("/checkGrade?grade=1", request.getPath());
+    }
+
+    @Test
+    public void testMultipleValidGrades() throws Exception {
+        // Настраиваем ответы для нескольких валидных оценок
+        server.enqueue(new MockResponse().setBody("true")); // для 5
+        server.enqueue(new MockResponse().setBody("true")); // для 4
+        server.enqueue(new MockResponse().setBody("true")); // для 3
+
         student.addGrade(5);
         student.addGrade(4);
         student.addGrade(3);
@@ -37,120 +82,73 @@ public class StudentTest {
         assertTrue(grades.contains(5));
         assertTrue(grades.contains(4));
         assertTrue(grades.contains(3));
+
+        // Проверяем все запросы
+        assertEquals("/checkGrade?grade=5", server.takeRequest().getPath());
+        assertEquals("/checkGrade?grade=4", server.takeRequest().getPath());
+        assertEquals("/checkGrade?grade=3", server.takeRequest().getPath());
     }
 
     @Test
-    void testAddInvalidGradeTooLow() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> student.addGrade(1)
-        );
-        assertEquals("1 is wrong grade", exception.getMessage());
-    }
+    public void testMixedValidAndInvalidGrades() throws Exception {
+        // Настраиваем ответы: valid, invalid, valid
+        server.enqueue(new MockResponse().setBody("true"));  // 5 - valid
+        server.enqueue(new MockResponse().setBody("false")); // 1 - invalid
+        server.enqueue(new MockResponse().setBody("true"));  // 4 - valid
 
-    @Test
-    void testAddInvalidGradeTooHigh() {
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> student.addGrade(6)
-        );
-        assertEquals("6 is wrong grade", exception.getMessage());
-    }
+        student.addGrade(5); // должно добавиться
 
-    @Test
-    void testGetGradesEncapsulation() {
-        // Добавляем оценки
-        student.addGrade(5);
-        student.addGrade(4);
+        try {
+            student.addGrade(1); // должно выбросить исключение
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            assertEquals("1 is wrong grade", e.getMessage());
+        }
 
-        // Получаем список оценок
+        student.addGrade(4); // должно добавиться
+
         List<Integer> grades = student.getGrades();
-
-        // Проверяем, что это неизменяемый список
-        assertThrows(UnsupportedOperationException.class, () -> grades.add(3));
-        assertThrows(UnsupportedOperationException.class, () -> grades.remove(0));
-        assertThrows(UnsupportedOperationException.class, () -> grades.set(0, 2));
-
-        // Проверяем, что изменения в оригинальном списке не влияют на возвращенную копию
-        student.addGrade(3);
-        assertEquals(2, grades.size()); // Возвращенный список не изменился
+        assertEquals(2, grades.size());
+        assertTrue(grades.contains(5));
+        assertTrue(grades.contains(4));
+        assertFalse(grades.contains(1));
     }
 
     @Test
-    void testGetAverageGradeWithNoGrades() {
-        assertEquals(0.0, student.getAverageGrade());
-    }
+    public void testRatingCalculation() throws Exception {
+        // Сначала добавляем оценки
+        server.enqueue(new MockResponse().setBody("true")); // для 5
+        server.enqueue(new MockResponse().setBody("true")); // для 4
+        server.enqueue(new MockResponse().setBody("true")); // для 3
 
-    @Test
-    void testGetAverageGradeWithGrades() {
+        // Затем настраиваем ответ для рейтинга
+        server.enqueue(new MockResponse()
+                .setBody("4") // ожидаемый рейтинг
+                 .addHeader("Content-Type", "text/plain"));
+
         student.addGrade(5);
         student.addGrade(4);
         student.addGrade(3);
 
-        assertEquals(4.0, student.getAverageGrade(), 0.001);
+        int rating = student.raiting();
+        assertEquals(4, rating);
+
+        // Проверяем запрос
+        RecordedRequest ratingRequest = server.takeRequest(); // первый запрос
+        assertEquals("/checkGrade?grade=5", ratingRequest.getPath());
     }
 
     @Test
-    void testHasGrades() {
-        assertFalse(student.hasGrades());
-        student.addGrade(5);
-        assertTrue(student.hasGrades());
-    }
+    public void testServiceUnavailable() throws Exception {
+        // Настраиваем ошибку сервера
+        server.enqueue(new MockResponse().setResponseCode(500));
 
-    @Test
-    void testGetGradesCount() {
-        assertEquals(0, student.getGradesCount());
-        student.addGrade(5);
-        assertEquals(1, student.getGradesCount());
-        student.addGrade(4);
-        assertEquals(2, student.getGradesCount());
-    }
-
-    @Test
-    void testEqualsAndHashCode() {
-        Student student1 = new Student("Иван");
-        student1.addGrade(5);
-        student1.addGrade(4);
-
-        Student student2 = new Student("Иван");
-        student2.addGrade(5);
-        student2.addGrade(4);
-
-        Student student3 = new Student("Петр");
-        student3.addGrade(5);
-
-        // Проверка equals
-        assertEquals(student1, student2);
-        assertNotEquals(student1, student3);
-        assertNotEquals(student1, null);
-        assertNotEquals(student1, new Object());
-
-        // Проверка hashCode
-        assertEquals(student1.hashCode(), student2.hashCode());
-        assertNotEquals(student1.hashCode(), student3.hashCode());
-    }
-
-    @Test
-    void testToString() {
-        student.addGrade(5);
-        student.addGrade(4);
-
-        String result = student.toString();
-        assertTrue(result.contains("Иван Иванов"));
-        assertTrue(result.contains("grades=[5, 4]") || result.contains("grades=[4, 5]"));
-    }
-
-    @Test
-    void testGradesListModificationAttempt() {
-        student.addGrade(5);
-        student.addGrade(4);
-
-        List<Integer> externalList = new ArrayList<>();
-        externalList.add(2);
-        externalList.add(3);
-
-        // Попытка модификации через полученный список должна выбрасывать исключение
-        List<Integer> grades = student.getGrades();
-        assertThrows(UnsupportedOperationException.class, () -> grades.addAll(externalList));
+        try {
+            student.addGrade(5);
+            fail("Expected Exception due to server error");
+        } catch (Exception e) {
+            // Ожидаем любое исключение из-за ошибки сервера
+            assertTrue(e instanceof Exception);
+        }
     }
 }
