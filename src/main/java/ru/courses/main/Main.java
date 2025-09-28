@@ -1,37 +1,27 @@
 package ru.courses.main;
 
-import ru.courses.food.Sauce;
-import ru.courses.food.Spiciness;
+import ru.courses.animals.Cat;
+import ru.courses.animals.Dog;
+import ru.courses.utils.FieldNullifier;
+
+
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Main {
     public static void main(String[] args) {
-        // Создаем соусы с разной остротой
-        Sauce sriracha = new Sauce("Срирача", Spiciness.VERY_SPICY);
-        Sauce tabasco = new Sauce("Табаско", Spiciness.SPICY);
-        Sauce mayonnaise = new Sauce("Майонез", Spiciness.NOT_SPICY);
 
-        // Выводим текстовое представление
-        System.out.println(sriracha);     // Соус Срирача: очень острый
-        System.out.println(tabasco);      // Соус Табаско: острый
-        System.out.println(mayonnaise);   // Соус Майонез: не острый
+        Cat cat = new Cat("Vasya", 10, new ArrayList<>(Arrays.asList("Anton", "Oleg", "Igor")));
+        System.out.println("До обнуления: " + cat);
 
-        // Попытка создать соус с некорректными параметрами
-        try {
-            Sauce invalid = new Sauce("", Spiciness.SPICY);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Ошибка: " + e.getMessage()); // Ошибка: Название соуса не может быть пустым
-        }
+        FieldNullifier.nullifyFields(cat);
+        System.out.println("После обнуления: " + cat);
 
-        try {
-            Sauce invalid = new Sauce("Кетчуп", null);
-        } catch (IllegalArgumentException e) {
-            System.out.println("Ошибка: " + e.getMessage()); // Ошибка: Острота соуса должна быть указана
-        }
+        // Тестируем на другом классе
+        Dog dog = new Dog("Sharik", 5, "Ovcharka");
+        System.out.println("\nДо обнуления: " + dog);
 
-        // Работа с перечислением остроты
-        System.out.println("Все возможные уровни остроты:");
-        for (Spiciness level : Spiciness.values()) {
-            System.out.println("- " + level.getDescription());
-        }
+        FieldNullifier.nullifyFields(dog);
+        System.out.println("После обнуления: " + dog);
     }
 }
